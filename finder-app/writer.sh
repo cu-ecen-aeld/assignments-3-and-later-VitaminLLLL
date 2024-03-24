@@ -19,5 +19,4 @@ elif [ ! -f "$writefile" ]; then
 fi
 
 echo "$writestr" > $writefile
-
 exit 0
