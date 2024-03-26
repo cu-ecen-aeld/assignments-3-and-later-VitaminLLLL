@@ -1,4 +1,8 @@
 #include "systemcalls.h"
+#include <sys/wait.h>
+#include <stdlib.h>
+#include <unistd.h>
+ #include <fcntl.h>
 
 /**
  * @param cmd the command to execute with system()
@@ -16,8 +20,7 @@ bool do_system(const char *cmd)
  *   and return a boolean true if the system() call completed with success
  *   or false() if it returned a failure
 */
-
-    return true;
+    return system(cmd) == 0;
 }
 
 /**
@@ -45,9 +48,7 @@ bool do_exec(int count, ...)
         command[i] = va_arg(args, char *);
     }
     command[count] = NULL;
-    // this line is to avoid a compile warning before your implementation is complete
-    // and may be removed
-    command[count] = command[count];
+	va_end(args);
 
 /*
  * TODO:
@@ -58,10 +59,29 @@ bool do_exec(int count, ...)
  *   as second argument to the execv() command.
  *
 */
-
-    va_end(args);
-
-    return true;
+	pid_t pid, wpid;
+	int status;
+	bool res = false;
+	pid = fork();
+	if(pid == 0) {
+		// This is child process
+		execv(command[0], command);
+		perror("Failed to execute the cmd!");
+		exit(-1);
+	} else if (pid < 0) {
+		perror("Failed to fork!");
+		res = false;
+	} else {
+		//This is parent process
+		wpid = waitpid(pid, &status, 0);
+		if (wpid == -1) {
+			res = false;
+		}
+		if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
+			res = true;
+		}
+	}
+    return res;
 }
 
 /**
@@ -80,9 +100,7 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
         command[i] = va_arg(args, char *);
     }
     command[count] = NULL;
-    // this line is to avoid a compile warning before your implementation is complete
-    // and may be removed
-    command[count] = command[count];
+    va_end(args);
 
 
 /*
@@ -92,8 +110,38 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
  *   The rest of the behaviour is same as do_exec()
  *
 */
-
-    va_end(args);
-
-    return true;
+	pid_t pid, wpid;
+	int status;
+	bool res = false;
+	int fd = open(outputfile, O_WRONLY|O_TRUNC|O_CREAT, 0644);
+	if (fd < 0) {
+		perror("Failed to open the outputfile!");
+		return false;
+	}
+	pid = fork();
+	if(pid == 0) {
+		// This is child process
+		if (dup2(fd, 1) < 0) {
+			perror("failed to duplicate file!");
+			exit(-1);
+		}
+		close(fd);
+		execv(command[0], command);
+		perror("Failed to execute the cmd!");
+		exit(-1);
+	} else if (pid < 0) {
+		perror("Failed to fork!");
+		res = false;
+	} else {
+		//This is parent process
+		close(fd);
+		wpid = waitpid(pid, &status, 0);
+		if (wpid == -1) {
+			res = false;
+		}
+		if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
+			res = true;
+		}
+	}
+    return res;
 }
