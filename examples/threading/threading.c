@@ -8,12 +8,29 @@
 //#define DEBUG_LOG(msg,...) printf("threading: " msg "\n" , ##__VA_ARGS__)
 #define ERROR_LOG(msg,...) printf("threading ERROR: " msg "\n" , ##__VA_ARGS__)
 
+#define MILLI_SCALE (0.001)
+
 void* threadfunc(void* thread_param)
 {
 
     // TODO: wait, obtain mutex, wait, release mutex as described by thread_data structure
     // hint: use a cast like the one below to obtain thread arguments from your parameter
-    //struct thread_data* thread_func_args = (struct thread_data *) thread_param;
+    struct thread_data* thread_func_args = (struct thread_data *) thread_param;
+    sleep(thread_func_args->wait_to_obtain_ms * MILLI_SCALE);
+    int res = pthread_mutex_lock(thread_func_args->mutex);
+    if (res != 0 ) {
+    	ERROR_LOG("Failed to lock the mutex : %d!", res);
+    	thread_func_args->thread_complete_success = false;
+    	return thread_param;
+    }
+    
+    sleep(thread_func_args->wait_to_release_ms * MILLI_SCALE);
+    res = pthread_mutex_unlock(thread_func_args->mutex);
+    if (res != 0 ) {
+    	ERROR_LOG("Failed to unlock the mutex : %d!", res);
+    	thread_func_args->thread_complete_success = false;
+    }
+    thread_func_args->thread_complete_success = true;
     return thread_param;
 }
 
@@ -28,6 +45,25 @@ bool start_thread_obtaining_mutex(pthread_t *thread, pthread_mutex_t *mutex,int 
      *
      * See implementation details in threading.h file comment block
      */
-    return false;
+     
+    struct thread_data *data = calloc(1, sizeof(struct thread_data));
+    if (data == NULL) {
+    	perror("Failed to allocate memory for thread data!");
+    	return false;
+    }
+    data->wait_to_obtain_ms = wait_to_obtain_ms;
+    data->wait_to_release_ms = wait_to_release_ms;
+    data->mutex = mutex;
+    data->thread_complete_success = false;
+    
+    int res;
+    res = pthread_create(thread, NULL, threadfunc, data);
+    if (res != 0) {
+    	ERROR_LOG("Failed to create the thread: %d!", res);
+    	free(data);
+    	return false;
+    }
+     
+    return true;
 }
 
