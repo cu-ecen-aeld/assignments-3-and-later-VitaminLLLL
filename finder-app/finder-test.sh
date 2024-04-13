@@ -54,13 +54,13 @@ fi
 
 for i in $( seq 1 $NUMFILES)
 do
-	./writer "$WRITEDIR/${username}$i.txt" "$WRITESTR"
+	writer "$WRITEDIR/${username}$i.txt" "$WRITESTR"
 done
 
-OUTPUTSTRING=$(./finder.sh "$WRITEDIR" "$WRITESTR")
+OUTPUTSTRING=$(finder.sh "$WRITEDIR" "$WRITESTR")
 
 #write the result to a file
-./writer "/tmp/assignment4-result.txt" ${OUTPUTSTRING}
+writer "/tmp/assignment4-result.txt" ${OUTPUTSTRING}
 
 # remove temporary directories
 rm -rf /tmp/aeld-data
