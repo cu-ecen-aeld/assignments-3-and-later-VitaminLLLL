@@ -123,17 +123,21 @@ int main(int argc, char** argv)
 		syslog(LOG_DEBUG, "Accepted connection from %s", ipstr);
 		
 		// Receive data
-		while (rec_len == (BUFFER_SIZE - 1)) {
+		while (1) {
 			rec_len = recv(acceptsockfd, buf, BUFFER_SIZE - 1, 0);
 			if (rec_len < 0 ) {
 				perror("Failed to receive");
 				return -1;
-			} else if (rec_len != 0){
-				buf[BUFFER_SIZE - 1] = '\0';
+			} else if (rec_len == 0){
+				break;
+			} else {
+				buf[rec_len] = '\0';
 				if (fprintf(fp, "%s", buf) < 0){
 					perror("Failed to write");
 					return -1;
 				}
+				if (buf[rec_len - 1] == '\n')
+					break;
 			}
 			memset(buf, 0, BUFFER_SIZE);
 		}
