@@ -1,5 +1,4 @@
 all:
-	$(CC) -g -Wall -Werror -c -o aesdsocket.o aesdsocket.c
-	$(CC) -g -Wall -Werror -I/ aesdsocket.o -o aesdsocket
+	$(CC) -g -Wall -Werror -o aesdsocket aesdsocket.c -lrt -lpthread
 clean:
 	rm -f *.o aesdsocket *.elf *.map 
